@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>YAML 来历调研 · 一个反 XML 的玩笑如何统治云原生</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+--bg:#f6f6f3; --surface:#ffffff; --surface2:#efefea; --ink:#171a1e; --ink2:#4c5257; --ink3:#7d838a;
+--line:#dddcd4; --accent:#c2410c; --accent-soft:#fbe9dd; --good:#1d7a4f; --good-soft:#e2f2e8;
+--warn:#a35b00; --warn-soft:#fdf0d9; --bad:#b3271e; --bad-soft:#fbe7e4;
+--code-bg:#eceae2;
+--shadow:0 1px 2px rgba(20,20,20,.05),0 8px 24px rgba(20,20,20,.05);
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#101315; --surface:#181c1f; --surface2:#1f2428; --ink:#eceee9; --ink2:#b6bcc0; --ink3:#858d92;
+--line:#2c3338; --accent:#ff8a4c; --accent-soft:#3a2417; --good:#4cc38a; --good-soft:#173327;
+--warn:#f5b544; --warn-soft:#3a2c10; --bad:#ff7a6e; --bad-soft:#3c1d19;
+--code-bg:#22282c;
+--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:var(--accent);text-decoration:none;overflow-wrap:anywhere}
+a:hover{text-decoration:underline}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+nav.toc{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
+backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav.toc.wrap{display:flex;gap:4px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
+nav.toc.wrap::-webkit-scrollbar{display:none}
+nav.toc a{flex:0 0 auto;color:var(--ink2);font-size:13.5px;font-weight:500;padding:5px 11px;border-radius:999px;white-space:nowrap}
+nav.toc a:hover{text-decoration:none;color:var(--ink)}
+header.hero{padding:52px 0 8px}
+.kicker{font-size:13px;letter-spacing:.14em;color:var(--accent);font-weight:700}
+h1{font-family:"Noto Serif SC",serif;font-weight:900;font-size:clamp(32px,6vw,50px);line-height:1.25;margin:12px 0 6px}
+.en-sub{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--ink3)}
+.verdict{font-size:19px;line-height:1.7;margin:22px 0 0;max-width:46em}
+.verdict strong{color:var(--accent)}
+.meta-line{margin-top:16px;font-size:13.5px;color:var(--ink3)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:30px 0 6px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 10px;box-shadow:var(--shadow)}
+.stat .n{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:600;line-height:1.15}
+.stat .l{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.45}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.stat:last-child{grid-column:span 2}}
+section{padding:38px 0 6px}
+h2{font-family:"Noto Serif SC",serif;font-weight:700;font-size:27px;line-height:1.35;margin:0 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .no{font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--accent);font-weight:600}
+h3{font-size:18px;font-weight:700;margin:26px 0 8px}
+p{margin:10px 0}
+.lead{color:var(--ink2)}
+ul{margin:8px 0;padding-left:22px}
+li{margin:6px 0}
+code{font-family:"IBM Plex Mono",monospace;font-size:.86em;background:var(--code-bg);padding:1px 6px;border-radius:5px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.6}
+pre code{background:none;padding:0}
+.src{font-size:12.5px;color:var(--ink3)}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;vertical-align:2px;margin-right:6px;white-space:nowrap}
+.tag.p{background:var(--good-soft);color:var(--good)}
+.tag.s{background:var(--warn-soft);color:var(--warn)}
+.tag.u{background:var(--bad-soft);color:var(--bad)}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--surface2);font-weight:700}
+.findings{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.finding{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+.finding h4{margin:0 0 6px;font-size:16.5px}
+.finding p{margin:6px 0}
+.finding .bad{color:var(--bad);font-weight:700}
+.timeline{border-left:2px solid var(--line);margin:18px 0 6px 6px;padding-left:22px}
+.timeline .ev{margin:0 0 16px;position:relative}
+.timeline .ev::before{content:"";position:absolute;left:-28px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.timeline .yr{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--accent)}
+footer{padding:44px 0 60px;color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+<nav class="toc wrap">
+  <a href="#name">名字</a><a href="#origin">出身</a><a href="#blood">血统</a><a href="#versions">版本</a><a href="#spread">扩散链</a><a href="#why">为何爱用</a><a href="#sins">原罪</a><a href="#rebels">造反者</a><a href="#verdict">判断</a><a href="#sources">来源</a>
+</nav>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">配置格式考古 · CONFIG FORMAT ARCHAEOLOGY</div>
+  <h1>YAML：一个反 XML 的玩笑，如何统治了云原生</h1>
+  <div class="en-sub">YAML Ain't Markup Language — from sml-dev, 2001, to every Kubernetes cluster on Earth.</div>
+  <p class="verdict">它赢的不是设计竞赛，是装机量竞赛：2001 年站在"人人恨 XML"的风口，2004 年被 Rails 带进一代 Web 程序员的日常，2014 年被 Kubernetes 加冕。<strong>它是配置格式界的 QWERTY 键盘</strong>——坑人人会背，但全世界的手指已经长成了它的形状。</p>
+  <p class="meta-line">调研日期 2026-10-21 · 来源分级：<span class="tag p">一手</span>yaml.org / Wikipedia 条目与规范史 / Ruby 官方文档　<span class="tag s">二手</span>技术博客与事故复盘</p>
+  <div class="stats">
+    <div class="stat"><div class="n">2001</div><div class="l">诞生年：Draft 0.1 发在 sml-dev 邮件列表</div></div>
+    <div class="stat"><div class="n">3 人</div><div class="l">作者：Clark Evans、Ingy döt Net、Oren Ben-Kiki</div></div>
+    <div class="stat"><div class="n">22 种</div><div class="l">YAML 1.1 认的布尔写法——挪威问题的根源</div></div>
+    <div class="stat"><div class="n">2014</div><div class="l">Kubernetes 选它做 manifest 语言：加冕时刻</div></div>
+    <div class="stat"><div class="n">2024</div><div class="l">MIME 类型 application/yaml 定稿</div></div>
+  </div>
+</header>
+
+<section id="name">
+  <h2><span class="no">01</span>先分清：.yml 和 .yaml 是同一个东西</h2>
+  <p class="lead">没有功能区别，解析器一视同仁。区别只有历史：</p>
+  <ul>
+    <li><span class="tag p">一手</span><strong>官方推荐 <code>.yaml</code></strong>：yaml.org 的 FAQ 自 2006 年起就明确推荐四字符后缀。</li>
+    <li><strong><code>.yml</code> 是 DOS/Windows 三字符扩展名限制的残留</strong>，如同 <code>.htm</code> 之于 <code>.html</code>；又被 Rails 时代的 <code>database.yml</code> 把习惯钉死。</li>
+    <li>现状：Kubernetes 社区偏 <code>.yaml</code>，老牌 Ruby/CI 生态偏 <code>.yml</code>，两派并存至今。</li>
+  </ul>
+  <p>名字本身也有两次人生：最初是自嘲式的 <em>Yet Another Markup Language</em>（"又一个标记语言"——XML 家族疯狂膨胀的年代）；2001 年底到 2002 年 4 月改成递归缩写 <em>YAML Ain't Markup Language</em>，刻意声明：我处理数据，不是文档标记。<span class="src">（Wikipedia: History and name）</span></p>
+</section>
+
+<section id="origin">
+  <h2><span class="no">02</span>出身：2001 年，"反 XML"运动里的一封帖子</h2>
+  <p>Clark Evans 在苦于 XML 写配置太啰嗦——标签噪音淹没数据本身。他想要一种"长得像人随手会写的样子"的数据格式。2001 年 5 月 11 日，他在 <strong>sml-dev</strong> 邮件列表发布 YAML Draft 0.1；这个列表本身就是从 xml-dev 分裂出来、专门研究"如何简化 XML"的。<span class="src">（Wikipedia / Grokipedia 复盘）</span></p>
+  <p>随后 Ingy döt Net（Perl 黑客）和 Oren Ben-Kiki 加入共同设计。更早的线索<span class="tag s">二手</span>：1999 年底 Evans 已在讨论代号 "YML" 的想法，yaml.org 域名注册于 2001 年 1 月 5 日。</p>
+</section>
+
+<section id="blood">
+  <h2><span class="no">03</span>设计血统：没有原创，全是借来的好零件</h2>
+  <table>
+    <tr><th>零件</th><th>借自</th><th>作用</th></tr>
+    <tr><td>缩进表示层级</td><td>Python</td><td>不用闭合标签、不用括号</td></tr>
+    <tr><td>纯文本序列化思路</td><td>Perl 的 Data::Denter</td><td>Ingy 本人的模块，YAML 的直接前身之一</td></tr>
+    <tr><td><code>---</code> 文档分隔符</td><td>MIME（RFC 2046）</td><td>一个文件装多份文档</td></tr>
+    <tr><td><code>key: value</code> 风格</td><td>RFC 822 邮件头</td><td>键值对的视觉习惯</td></tr>
+    <tr><td>转义序列</td><td>C</td><td>字符串字面量规则</td></tr>
+    <tr><td>流式读写模型</td><td>SAX</td><td>事件流式解析</td></tr>
+  </table>
+  <p>这个拼装血统解释了它的性格：每个零件都眼熟、好上手，但拼在一起的整体语义——尤其是类型推断——没人能一眼看全。日后所有坑的种子，都埋在这里。</p>
+</section>
+
+<section id="versions">
+  <h2><span class="no">04</span>版本线：1.1 埋雷，1.2 收编 JSON</h2>
+  <table>
+    <tr><th>版本</th><th>日期</th><th>关键变化</th></tr>
+    <tr><td>1.0</td><td>2004-01-29</td><td>首个正式规范</td></tr>
+    <tr><td>1.1</td><td>2005-01-18</td><td>功能膨胀期；布尔识别规则在这里失控</td></tr>
+    <tr><td>1.2</td><td>2009-07-21</td><td>与 JSON 对齐：合法 JSON 即合法 YAML</td></tr>
+    <tr><td>1.2.2</td><td>2021-10-01</td><td>现行版，勘误澄清为主</td></tr>
+  </table>
+  <p>长尾事实：规范 2009 年就进了 1.2，但最流行的解析器 <strong>PyYAML 至今默认仍按 1.1 的类型规则工作</strong>——"规范说 A、解析器做 B"是这个生态的常态，写 YAML 的人必须知道自己面对的是哪个解析器。</p>
+</section>
+
+<section id="spread">
+  <h2><span class="no">05</span>扩散链：三级跳登上王座</h2>
+  <div class="timeline">
+    <div class="ev"><span class="yr">2003</span>　<strong>Syck 进 Ruby 标准库。</strong>传奇黑客 why the lucky stiff 写的 C 解析器让 YAML 第一次有了主流语言的"户口"；Ruby 2.0 后由 Psych 接棒。<span class="tag p">一手</span><span class="src">Ruby 官方文档 History 一节</span></div>
+    <div class="ev"><span class="yr">2004</span>　<strong>Rails 的 database.yml。</strong>一代 Web 程序员对"配置文件"的肌肉记忆，是 Rails 教程给的。</div>
+    <div class="ev"><span class="yr">2012</span>　<strong>Ansible playbook。</strong>运维/DevOps 圈集体入坑，声明式文本配置成为运维的共同语言。</div>
+    <div class="ev"><span class="yr">2014</span>　<strong>Kubernetes 加冕。</strong>声明式 API 需要"写给人看的期望状态文件"：map/list/scalar 与 API 对象 1:1 对应、<code>---</code> 一文件多资源、注释可写运维备注。manifest 从此默认 YAML。</div>
+    <div class="ev"><span class="yr">2014→</span>　<strong>生态引力期。</strong>Docker Compose、Helm、Kustomize、Argo CD、GitLab CI、OpenAPI 全面 YAML 化。</div>
+    <div class="ev"><span class="yr">2019</span>　<strong>GitHub Actions 改版投奔 YAML。</strong>2018 年第一版用的还是 HCL，次年推倒重来换成 YAML——最有说服力的一票：生态存量习惯赢了自研语言。<span class="tag s">二手</span></div>
+  </div>
+</section>
+
+<section id="why">
+  <h2><span class="no">06</span>为什么云原生资深程序员爱用它</h2>
+  <h3>真顺手的部分（对手衬托的）</h3>
+  <ul>
+    <li><strong>有注释</strong>。JSON 为数据交换而生、不支持注释——对"需要写明为什么这么配"的配置文件是硬伤；XML 有注释但标签噪音太大。</li>
+    <li><strong>diff 友好</strong>。缩进即结构、无闭合标签，改一行就是一行：PR 能逐行 review，GitOps（配置即代码、Git 为唯一事实源）的工作流靠这个成立。</li>
+    <li><strong>声明式契合</strong>。K8s manifest 是"期望状态文件"，YAML 的数据导向语法与之天然同构。</li>
+  </ul>
+  <h3>没得选的部分</h3>
+  <ul>
+    <li>工具链全员说 YAML：不用它，就是和 Helm、Argo、CI 以及文档里的一切示例过不去。</li>
+    <li>所谓"资深偏好"，相当比例是<strong>幸存者经验</strong>：亲历过 XML 配置地狱和 JSON 无注释之痛的一代人，筛剩下的最优解就是它；同时他们知道每个坑埋在哪，并有 linter + schema 校验（kubeconform 等）兜底。</li>
+  </ul>
+</section>
+
+<section id="sins">
+  <h2><span class="no">07</span>原罪：隐式类型推断——配置文件会静默地撒谎</h2>
+  <p class="lead">YAML 最大的设计债：它猜你写的值是什么类型，<strong>猜错不报错</strong>。文件合法、无异常、行为悄悄错位——这是最贵的 bug 类型。</p>
+  <div class="findings">
+    <div class="finding">
+      <h4>挪威问题（The Norway Problem）</h4>
+      <p>YAML 1.1 认 22 种布尔写法（<code>y / n / yes / no / on / off</code> 及大小写变体）。于是挪威的国家代码变成了布尔值：</p>
+      <pre><code>country: NO        # 你想写：挪威
+# 1.1 解析器读到的是：country = false</code></pre>
+      <p>DoorDash 等公司的生产配置中过招，Kubernetes manifest、CI 配置里都有案底。<span class="tag s">二手</span><span class="src">多篇事故复盘（dev.to 等）</span></p>
+    </div>
+    <div class="finding">
+      <h4><code>on:</code> 变 <code>true:</code></h4>
+      <p>GitHub Actions 工作流的触发键 <code>on</code>，会被按 1.1 规则工作的解析器读成布尔键 <code>true</code>——YAML 工具链互操作史上的经典坑，与挪威问题同根。</p>
+    </div>
+    <div class="finding">
+      <h4>版本号尾零蒸发</h4>
+      <pre><code>version: 1.10      # 你想写：字符串 "1.10"
+# 任何解析器读到的都是：浮点数 1.1</code></pre>
+    </div>
+    <div class="finding">
+      <h4>六十进制与前导零</h4>
+      <p><code>22:30</code> 在 YAML 1.1 里可被读成整数 <span class="bad">1350</span>（22×60+30）；<code>0644</code> 在 1.1 是八进制 <span class="bad">420</span>、在 1.2 是十进制 <span class="bad">644</span>——同一个文件，两个数。</p>
+    </div>
+  </div>
+  <p>缓解手段只有纪律：可疑字符串一律加引号，并对配置文件做 schema 校验。YAML 1.2 已把布尔收紧为只认 <code>true/false</code>，但存量 1.1 解析器的行为改不了。</p>
+</section>
+
+<section id="rebels">
+  <h2><span class="no">08</span>造反者与缰绳</h2>
+  <table>
+    <tr><th>挑战者</th><th>年份</th><th>主张</th></tr>
+    <tr><td>TOML</td><td>2013</td><td>Tom Preston-Werner 冲着 YAML 的含糊而来，旗号就是"消灭歧义"；如今是 Cargo、Hugo 的配置格式——但深层嵌套一深就难读</td></tr>
+    <tr><td>Jsonnet / CUE / HCL</td><td>2014 / 2018 / 2014</td><td>给配置加模板、类型与逻辑；代价是团队要多学一门语言、多一层编译</td></tr>
+    <tr><td><strong>KYAML</strong></td><td>2025</td><td>Kubernetes SIG CLI 的 KEP 5295：官方严格子集——字符串强制引号、禁用隐式转换。不是换掉 YAML，是给它套缰绳<span class="tag s">二手</span></td></tr>
+  </table>
+  <p>KYAML 的存在本身就是最强的信号：连 Kubernetes 官方都承认 YAML 的自由度是负债，但开出的药方依然是"收紧子集"，不是"迁移格式"。装机量面前，革命让位于治理。</p>
+</section>
+
+<section id="verdict">
+  <h2><span class="no">09</span>判断</h2>
+  <p class="verdict" style="margin-top:0">YAML 的王座来自<strong>时间点 × 载体链</strong>：2001 年的反 XML 风口、Rails 的一代人、Ansible 的运维圈、Kubernetes 的加冕。它是配置格式界的 QWERTY——所有人都知道布局不合理，但重练手指的成本高于忍受它的成本。<strong>资深程序员爱用它，一半是真顺手（注释、diff、声明式），一半是生态引力；而"资深"本身，就包括知道那 22 种布尔写法埋在哪里。</strong></p>
+</section>
+
+<section id="sources">
+  <h2><span class="no">10</span>来源与未核实</h2>
+  <ul>
+    <li><span class="tag p">一手</span>Wikipedia「YAML」条目：名称演变、版本日期、<code>.yaml</code> 官方推荐（2006）、MIME 定稿（2024）、设计影响来源（MIME/RFC 822/C/SAX）。</li>
+    <li><span class="tag p">一手</span>Ruby 官方文档 YAML 模块 History：Syck 为 why the lucky stiff 所作的原始实现、Ruby 2.0 移除、Psych 接棒。</li>
+    <li><span class="tag s">二手</span>Grokipedia「YAML」词条：sml-dev 起源细节、1999 年 "YML" 讨论、yaml.org 域名注册日期。</li>
+    <li><span class="tag s">二手</span>dev.to / KodeKloud 等多篇事故复盘：挪威问题的生产案例、22 种布尔写法、<code>22:30</code> 与 <code>0644</code> 的解析差异。</li>
+    <li><span class="tag s">二手</span>Cloud Native Now 对 KYAML（KEP 5295）的报道。</li>
+  </ul>
+  <p><strong>未核实/开放问题</strong>：TOML 作者对 YAML 的具体措辞未逐字核对原文；GitHub Actions 2018 版用 HCL 的细节为通行说法，未查一手发布记录；"云原生程序员偏好 YAML"为生态观察，无问卷级数据。</p>
+</section>
+
+<footer>
+  独立第三方调研，与 YAML 官方团队无关。内容为 2026-10-21 快照。仓库：<a href="https://github.com/ringozzt/yaml-research">github.com/ringozzt/yaml-research</a> · 另见 <a href="./README.md">README.md</a> 与 <a href="./mindmap.html">交互思维导图</a>。
+</footer>
+</div>
+</body>
+</html>
